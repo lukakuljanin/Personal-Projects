@@ -1,0 +1,74 @@
+from simple_colors import *
+import os
+
+colours = {'-': blue, '■': green, 'X': red}
+letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+
+# Colours the board tiles depending on the item
+def colour_tile(tile):
+  return colours.get(tile, lambda x: x)(tile)
+
+# Prints available ships then inputs codes to place them
+def place_ship(turn, board_1, board_2):
+  ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+ 
+  while ships:
+    print_board(turn, board_1, board_2, letters)
+
+    print(green('Available ships:'))
+    for name, size in ships.items():
+      print(f"{name}: {size}")
+        
+    print(green('\nPossible codes:'))
+    print('Enter a 4 character sequence to place a ship (ex. 5a1d)')
+    print("Enter 'x' to remove all placed ships")
+    print("Enter 'xxx' to end the game")
+    code = input("\nEnter your code: ")
+
+    if code.lower() == 'x':
+      ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+      continue
+    elif code.lower() == 'xxx':
+      print('\nBye! thanks for playing!\n')
+      exit()
+    else:
+      while True:
+        errors = []
+
+        
+
+        print(i for i in errors)
+        
+        # remove one ship from the dictionary
+        ship_name, ship_size = ships.popitem()
+        if len(ships) == 0:
+          break
+      
+  
+      
+
+# Prints out the player's board depending on the turn
+def print_board(turn, board_1, board_2, letters):
+  os.system('cls')
+
+  current_board = board_1 if turn == 1 else board_2
+  print(magenta(f"Player {turn}'s Board\n", ['bold', 'underlined']))
+
+  # Prints letters on left of board and numbers at the bottom
+  for i, row in enumerate(current_board):
+    print(magenta(letters[i]), ' '.join(colour_tile(tile) for tile in row))
+  print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)) + '\n') 
+
+
+# Main function that starts the game
+def start_game():
+  board_1 = [['-' for i in range(10)] for j in range(10)]
+  board_2 = [['0' for i in range(10)] for j in range(10)]
+  
+  place_ship(1, board_1, board_2)
+  place_ship(2, board_1, board_2)
+
+  
+
+
+start_game()
