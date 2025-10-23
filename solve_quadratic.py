@@ -5,7 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def format(x: float) -> str:
+# Utility function
+def format_value(x: float) -> str:
   """
   Convert a float to a human-readable string.
 
@@ -44,7 +45,7 @@ def compute_quadratic(a: float, b: float, c: float) -> QuadraticResult:
     Raises ValueError if equation is not quadratic or has no real roots.
     """
     if a == 0:
-        raise ValueError("Coefficient 'a' cannot be zero; not a quadratic equation.")
+        raise ValueError("Coefficient 'a' cannot be zero. not a quadratic equation.")
 
     # Build formatted equation string
     equation = f"{format_value(a) if a != 1 else ''}x²"
@@ -142,7 +143,7 @@ def graph_quadratic(result: QuadraticResult) -> None:
 # Main program
 def main():
     """
-    Parse command-line arguments, compute quadratic, display and graph it.
+    Retrieve command-line arguments, compute quadratic, display and graph it.
     """
     if len(sys.argv) != 4:
         print("\nUsage: python factor.py 'a' 'b' 'c'\nOnly enter three args\n")
