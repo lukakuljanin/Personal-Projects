@@ -2,73 +2,217 @@ from simple_colors import *
 import os
 
 colours = {'-': blue, '■': green, 'X': red}
-letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
 # Colours the board tiles depending on the item
 def colour_tile(tile):
-  return colours.get(tile, lambda x: x)(tile)
+    return colours.get(tile, lambda x: x)(tile)
 
-# Prints available ships then inputs codes to place them
-def place_ship(turn, board_1, board_2):
-  ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
- 
-  while ships:
-    print_board(turn, board_1, board_2, letters)
 
-    print(green('Available ships:'))
-    for name, size in ships.items():
-      print(f"{name}: {size}")
-        
-    print(green('\nPossible codes:'))
-    print('Enter a 4 character sequence to place a ship (ex. 5a1d)')
-    print("Enter 'x' to remove all placed ships")
-    print("Enter 'xxx' to end the game")
-    code = input("\nEnter your code: ")
-
-    if code.lower() == 'x':
-      ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
-      continue
-    elif code.lower() == 'xxx':
-      print('\nBye! thanks for playing!\n')
-      exit()
-    else:
-      while True:
+def validate_input(code, ships):
+    while True:
         errors = []
 
+        #Validates the input code and returns parsed values or error message
+        if len(code) in range(4, 6):
+            try:
+                length = int(code[0])
+                letter = code[1].upper()
         
+                # Handle both single and double digit columns 
+                if len(code) == 4:
+                    number = int(code[2])
+                    direction = code[3].upper()
+                else:  # len(code) == 5
+                    number = int(code[2:4])
+                    direction = code[4].upper()
+            
+            except (ValueError, IndexError):
+                print("Invalid format. Use: length + letter + number + direction (ex. 5a1d or 5a10d)")
+    
+    
+            # Validate ship length exists in available ships
+            if length not in ships.values():
+                return None, f"Invalid ship length. Available lengths: {set(ships.values())}"
+    
+            # Validate letter (A-J)
+            if letter not in "ABCDEFGHIJ":
+                return None, "Row must be A-J"
+    
+        # Validate number (1-10)
+        if numner not in range(1, 11):
+            return None, "Column must be 1-10"
+    
+        # Validate direction
+        if direction not in "RLUD":
+            return None, "Direction must be R (right), L (left), U (up), or D (down)"
+    
+        return (length, letter, number, direction), None
 
-        print(i for i in errors)
+
+
+def get_ship_coordinates(length, letter, number, direction):
+    """Returns list of coordinates for ship placement"""
+    row = ord(letter.upper()) - 65
+    col = number - 1
+    coords = []
+    
+    for i in range(length):
+        if direction == 'r':
+            coords.append((row, col + i))
+        elif direction == 'l':
+            coords.append((row, col - i))
+        elif direction == 'd':
+            coords.append((row + i, col))
+        elif direction == 'u':
+            coords.append((row - i, col))
+    
+    return coords
+
+
+def is_valid_placement(board, coords):
+    """Checks if ship placement is valid (in bounds, not overlapping, not adjacent)"""
+    # Check if all coordinates are in bounds
+    for row, col in coords:
+        if row < 0 or row >= 10 or col < 0 or col >= 10:
+            return False, "Ship would be placed out of bounds"
+    
+    # Check for overlapping ships
+    for row, col in coords:
+        if board[row][col] == '■':
+            return False, "Ship would overlap with another ship"
+    
+    # Check for adjacent ships (must be at least 1 tile away)
+    for row, col in coords:
+        # Check all 8 surrounding tiles
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == 0 and dc == 0:
+                    continue  # Skip the current tile
+                
+                check_row, check_col = row + dr, col + dc
+                
+                # Check if adjacent position is in bounds
+                if 0 <= check_row < 10 and 0 <= check_col < 10:
+                    # If adjacent tile has a ship and it's not part of current ship coords
+                    if board[check_row][check_col] == '■' and (check_row, check_col) not in coords:
+                        return False, "Ship must be at least one tile away from other ships"
+    
+    return True, None
+
+
+def place_ship_on_board(board, coords):
+    """Places ship on the board"""
+    for row, col in coords:
+        board[row][col] = '■'
+
+
+def find_ship_by_length(ships, length):
+    """Finds and returns ship name by length"""
+    for name, size in ships.items():
+        if size == length:
+            return name
+    return None
+
+
+# Prints available ships then inputs codes to place them
+def place_ship(player, board_1, board_2):
+    ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+    
+    current_board = board_1 if player == 1 else board_2
+    
+    while ships:
+        print_board(player, board_1, board_2)
         
-        # remove one ship from the dictionary
-        ship_name, ship_size = ships.popitem()
-        if len(ships) == 0:
-          break
-      
-  
-      
+        print(green('Available ships:'))
+        for name, size in ships.items():
+          print(f"{name}: {size}")
+        
+        print(green('\nControls:'))
+        print("Format: [length][row][column][direction]")
+        print("Examples: 5A1R (Carrier at A1 going right), 3B10L (Cruiser at B10 going left)")
+        print("Directions: R = right, L = left, U = up, D = down")
+        
+        code = input("\nEnter code (or 'x' to reset, 'xxx' to quit): ")
+        
+        if code.lower() == 'x':
+          ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+          # Clear the board
+          current_board = [['-' for i in range(10)] for j in range(10)]
+          print(yellow("\nAll ships removed!"))
+          input("\nPress Enter to continue...")
+        
+        elif code.lower() == 'xxx':
+          print('\nBye! Thanks for playing!\n')
+          exit()
+        
+        # Validate input
+        parsed, error = validate_input(code, ships)
+        if error:
+          print(red(f"\nError: {error}"))
+          input("\nPress Enter to continue...")
+          continue
+        
+        length, letter, number, direction = parsed
+        
+        # Get coordinates
+        coords = get_ship_coordinates(length, letter, number, direction)
+        
+        # Validate placement
+        valid, error = is_valid_placement(current_board, coords)
+        if not valid:
+          print(red(f"\nError: {error}"))
+          input("\nPress Enter to continue...")
+          continue
+        
+        # Place the ship
+        place_ship_on_board(current_board, coords)
+        
+        # Remove the ship from available ships
+        ship_name = find_ship_by_length(ships, length)
+        if ship_name:
+          del ships[ship_name]
+
+          # Check if this was the last ship
+          if len(ships) == 0:
+            print_board(player, board_1, board_2)
+            print(yellow("\nAll ships placed!"))
+            confirm = input("Are you satisfied with your ship placement? (y/n): ").lower()
+                
+            if confirm == 'y':
+              print(green("Ship placement confirmed!"))
+              input("Press Enter to continue...")
+              break
+
+            else:
+              # Reset ships and board for this player
+              ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+              board_1 = [['-' for i in range(10)] for j in range(10)]
+              print(yellow("\nResetting your board. Place your ships again!"))
+              input("Press Enter to continue...")
+
+
+
 
 # Prints out the player's board depending on the turn
-def print_board(turn, board_1, board_2, letters):
-  os.system('cls')
-
-  current_board = board_1 if turn == 1 else board_2
-  print(magenta(f"Player {turn}'s Board\n", ['bold', 'underlined']))
-
-  # Prints letters on left of board and numbers at the bottom
-  for i, row in enumerate(current_board):
-    print(magenta(letters[i]), ' '.join(colour_tile(tile) for tile in row))
-  print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)) + '\n') 
+def print_board(player, board_1, board_2):
+    os.system('cls' if os.name == 'nt' else 'clear')
+    
+    current_board = board_1 if player == 1 else board_2
+    print(magenta(f"Player {player}'s Board\n", ['bold', 'underlined']))
+    
+    # Prints letters on left of board and numbers at the bottom
+    for i, row in enumerate(current_board):
+        print(magenta(chr(i + 65)), ' '.join(colour_tile(tile) for tile in row))
+    print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)) + '\n')
 
 
 # Main function that starts the game
 def start_game():
-  board_1 = [['-' for i in range(10)] for j in range(10)]
-  board_2 = [['0' for i in range(10)] for j in range(10)]
-  
-  place_ship(1, board_1, board_2)
-  place_ship(2, board_1, board_2)
-
-  
+    board_1 = [['-' for i in range(10)] for j in range(10)]
+    board_2 = [['-' for i in range(10)] for j in range(10)]
+    
+    place_ship(1, board_1, board_2)
+    place_ship(2, board_1, board_2)
 
 
 start_game()
