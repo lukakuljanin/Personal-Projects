@@ -3,20 +3,22 @@ from simple_colors import *
 
 colours = {'-': blue, '■': green, 'X': red}
 
+# Colours the board tiles depending on the item
+def colour_tile(tile):
+    return colours.get(tile, lambda x: x)(tile)
 
+# Makes a 10 by 10 board
+def make_board():
+    return [['-' for i in range(10)] for j in range(10)]
+
+# Takes in errors list and prints them
 def print_errors(errors):
     for i in errors:
         print(red(f"\n{i}"))
 
     input(yellow("\nPress 'ENTER' to continue: "))
 
-
-# Colours the board tiles depending on the item
-def colour_tile(tile):
-    return colours.get(tile, lambda x: x)(tile)
-
-
-# Prints out the player's board depending on the turn
+# Prints out the player's board
 def print_board(player, current_board):
     os.system('cls' if os.name == 'nt' else 'clear')
     
@@ -28,6 +30,47 @@ def print_board(player, current_board):
     print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)) + '\n')
 
 
+
+def battle_phase(player_1_board, player_2_board, player_1_attack_board, player_2_attack_board):
+    player = 2
+
+    while True:
+        current_attack_board = player_1_attack_board if player == 2 else player_2_attack_board
+        player = 1 if player == 2 else 2
+
+        while True:
+            print_board(current_attack_board)
+
+            print(green("\nControls:"))
+            print("Format: [letter][number]")
+            print("Examples: A5, B10")
+
+            coord = input(yellow("Enter the coordinate you would like to attack (or 'xxx' to quit): "))
+
+            # Quit game
+            if coord.lower() == 'xxx':
+                print("\nBye! Thanks for playing!\n")
+                exit()
+
+
+            if len(coord) in range(2, 4):
+                try:
+                    letter = coord[0].upper()
+            
+                    # Handle both single and double digit numbers 
+                    number = int(coord[1]) if len(coord) == 2 else int(coord[1:3])
+                
+                except (ValueError, IndexError):
+                    print(red("\nInvalid format. Must be letter + number (ex. A5 or B10)"))
+
+            else:
+                print(red("\nInvalid format. Coordinate must be 2-3 characters long (ex. A5 or B10)"))
+            
+
+
+
+
+        
 
 
 
@@ -46,7 +89,6 @@ def place_phase(player, current_board):
         print("Examples: 5A1R (Carrier at A1 going right), 3B10L (Cruiser at B10 going left)")
         print("Directions: R = right, L = left, U = up, D = down") 
         
-        errors = []
         code = input(yellow("\nEnter code (or 'x' to reset board, 'xxx' to quit): "))
     
         # Reset ship placements
@@ -78,9 +120,10 @@ def place_phase(player, current_board):
                     direction = code[4].upper()
             
             except (ValueError, IndexError):
-                print("Invalid format. Use: length + letter + number + direction (ex. 5a1d or 5a10d)")
+                print(red("\nInvalid format. Code must be length + letter + number + direction (ex. 5A1D or 4B10D)"))
     
-    
+            errors = []
+
             # Validate ship length exists in available ships
             if length not in ships.values():
                 errors.append(f"Invalid ship length. Available lengths: {set(ships.values())}")
@@ -123,21 +166,15 @@ def place_phase(player, current_board):
 
 
                 # Check if ship placement is in bounds
-                out_of_bounds = False
-
                 for row, col in coords:
                     # Check if invalid placement
                     if row < 0 or row >= 10 or col < 0 or col >= 10:
-                        # Raise flag erorr
-                        out_of_bounds = True
+                        # Append error if detected
+                        errors.append("Ship would be placed out of bounds")
                         break
 
-                # Append error if detected
-                if out_of_bounds:
-                    errors.append("Ship would be placed out of bounds")
 
-
-                # Check if placement is adjacent to other ships
+                # Check if ship placement is adjacent to other ships
                 found_adjacent_ship = False
 
                 # Check if invalid placement
@@ -153,8 +190,9 @@ def place_phase(player, current_board):
                             break
                             
                         for delta_col in [-1, 0, 1]:
+                            # Skip current tile
                             if delta_row == 0 and delta_col == 0:
-                                continue  # Skip current tile
+                                continue
                             
                             check_row, check_col = row + delta_row, col + delta_col
                             
@@ -208,17 +246,22 @@ def place_phase(player, current_board):
 
         # If code isn't correct length
         else:
-            print(red("\nCode must be 4-5 characters long (ex. 5a1d or 5a10d)"))
+            print(red("\nInvalid format. Code must be 4-5 characters long (ex. 5A1D or 4B10D)"))
 
 
 
 # Main function that starts the game
 def start_game():
-    board_1 = [['-' for i in range(10)] for j in range(10)]
-    board_2 = [['0' for i in range(10)] for j in range(10)]
+    player_1_board = make_board()
+    player_2_board = make_board()
+
+    player_1_attack_board = make_board()
+    player_2_attack_board = make_board()
     
-    place_phase(1, board_1)
-    place_phase(2, board_2)
+    place_phase(1, player_1_board)
+    place_phase(2, player_2_board)
+
+    battle_phase()
 
 
 start_game()
