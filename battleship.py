@@ -3,6 +3,14 @@ from simple_colors import *
 
 colours = {'-': blue, '■': green, 'X': red}
 
+
+def print_errors(errors):
+    for i in errors:
+        print(red(f"\n{i}"))
+
+    input(yellow("\nPress 'ENTER' to continue: "))
+
+
 # Colours the board tiles depending on the item
 def colour_tile(tile):
     return colours.get(tile, lambda x: x)(tile)
@@ -92,42 +100,115 @@ def place_phase(player, current_board):
 
             # Print errors if any
             if errors:
-                for i in errors:
-                    print(red(f"\n{i}"))
+                print_errors(errors)
 
-                input(yellow("\nPress 'ENTER' to continue: "))
 
-            # If code is valid
+            # If code format is valid, check if ship placement is valid
             else:
-                # Remove ship from ships dictionary
-                for ship_name, ship_size in list(ships.items()):
-                    if ship_size == length:
-                        del ships[ship_name]
+                # Change letter and number into row and column
+                row = ord(letter) - 65
+                col = number - 1
+                coords = []
+                
+                # Get coords for ship placement
+                for i in range(length):
+                    if direction == 'R':
+                        coords.append((row, col + i))
+                    elif direction == 'L':
+                        coords.append((row, col - i))
+                    elif direction == 'D':
+                        coords.append((row + i, col))
+                    elif direction == 'U':
+                        coords.append((row - i, col))
+
+
+                # Check if ship placement is in bounds
+                out_of_bounds = False
+
+                for row, col in coords:
+                    # Check if invalid placement
+                    if row < 0 or row >= 10 or col < 0 or col >= 10:
+                        # Raise flag erorr
+                        out_of_bounds = True
                         break
 
+                # Append error if detected
+                if out_of_bounds:
+                    errors.append("Ship would be placed out of bounds")
 
-                # Check if it was the last ship
-                if not len(ships):
-                    print_board(player, current_board)
-                    print(yellow("\nAll ships placed!"))
-                    confirm = input("\nAre you satisfied with your ship placement? (y/n): ")
-                        
-                    if confirm.lower() == 'y':
-                        print(green("\nShip placement confirmed!"))
-                        input(yellow("Press 'ENTER' to continue: "))
+
+                # Check if placement is adjacent to other ships
+                found_adjacent_ship = False
+
+                # Check if invalid placement
+                for row, col in coords:
+                    # Break if adjacent ships were found 
+                    if found_adjacent_ship:
                         break
 
-                    else:
-                        # Reset ships and board for the player
-                        ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
-                        current_board = [['-' for i in range(10)] for j in range(10)]
-                        print("\nResetting your board, place your ships again!")
-                        input(yellow("\nPress 'ENTER' to continue: "))
+                    # Check all 8 surrounding tiles using dr and dc
+                    for delta_row in [-1, 0, 1]:
+                        # Break if adjacent ships were found
+                        if found_adjacent_ship:
+                            break
+                            
+                        for delta_col in [-1, 0, 1]:
+                            if delta_row == 0 and delta_col == 0:
+                                continue  # Skip current tile
+                            
+                            check_row, check_col = row + delta_row, col + delta_col
+                            
+                            # Check if adjacent position is in bounds
+                            if 0 <= check_row < 10 and 0 <= check_col < 10:
+                                # If adjacent tile has a ship and is not part of the ship being placed
+                                if current_board[check_row][check_col] == '■' and (check_row, check_col) not in coords:
+                                    # Raise flag error
+                                    found_adjacent_ship = True
+                                    break
+                
+                # Append error if detected
+                if found_adjacent_ship:
+                    errors.append("Ship must be at least one tile away from other ships")
+
+
+                # Print errors if any
+                if errors:
+                    print_errors(errors) 
+
+                # If ship placement is valid
+                else:
+                    # Place ship on board
+                    for row, col in coords:
+                        current_board[row][col] = '■'
+
+                    # Remove ship from ships dictionary
+                    for ship_name, ship_size in list(ships.items()):
+                        if ship_size == length:
+                            del ships[ship_name]
+                            break
+
+                    # Check if it was the last ship
+                    if not len(ships):
+                        print_board(player, current_board)
+                        print("All ships placed!")
+                        confirm = input(yellow("\nAre you satisfied with your ship placement? (y/n): "))
+                            
+                        if confirm.lower() == 'y':
+                            print(green("\nShip placement confirmed!"))
+                            input(yellow("\nPress 'ENTER' to continue: "))
+                            break
+
+                        else:
+                            # Reset ships and board for the player
+                            ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+                            current_board = [['-' for i in range(10)] for j in range(10)]
+                            print("\nResetting your board, place your ships again!")
+                            input(yellow("\nPress 'ENTER' to continue: "))
+
 
         # If code isn't correct length
         else:
             print(red("\nCode must be 4-5 characters long (ex. 5a1d or 5a10d)"))
-
 
 
 
