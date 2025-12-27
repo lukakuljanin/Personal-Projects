@@ -11,17 +11,16 @@ def colour_tile(tile):
 def make_board():
     return [['-' for i in range(10)] for j in range(10)]
 
+#
+def make_ships():
+    ships = {
+        5: ['Carrier'],
+        4: ['Battleship'],
+        3: ['Cruiser', 'Submarine'],
+        2: ['Destroyer']
+    }
 
-def check_win(board):
-    count = 0
-
-    for i in board:
-        if 'X' in i:
-            count += 1
-        
-    return True if count == 17 else False
-        
-
+    return ships
 
 # Takes in errors list and prints them
 def print_errors(errors):
@@ -31,10 +30,10 @@ def print_errors(errors):
     input(yellow("\nPress 'ENTER' to continue: "))
 
 # Prints out the player's board
-def print_board(player, current_board, attack_or_not):
+def print_board(player, current_board, board_type):
     os.system('cls' if os.name == 'nt' else 'clear')
     
-    print(magenta(f"Player {player}'s {attack_or_not}Board\n", ['bold', 'underlined']))
+    print(magenta(f"Player {player}'s {board_type}Board\n", ['bold', 'underlined']))
     
     # Print letters on left of board and numbers at the bottom
     for i, row in enumerate(current_board):
@@ -100,12 +99,35 @@ def battle_phase(player, current_attack_board, current_defend_board):
                     # If tile is empty, miss
                     if current_defend_board[row][col] == '-':
                         current_attack_board[row][col] = '●'
-                        print(red("\nMiss!"))
+                        print_board(player, current_attack_board, 'Attack ')
+                        print(red("Miss!"))
 
                     # If tile is a ship, hit
                     else:
                         current_attack_board[row][col] = 'X'
-                        print(green("\nHit!"))
+                        print_board(player, current_attack_board, 'Attack ')
+                        print(green("Hit!"))
+
+                        # Check how many ship tiles they have hit
+                        count = 0
+
+                        for i in current_attack_board:
+                            for j in i:
+                                if j == 'X':
+                                    count += 1
+
+                        # If player has won   
+                        if count == 17:
+                            print(green(f"\nPlayer '{player}' has won! Congrats!"))
+                            choice = input(yellow("\nWould you like to play again? (y/n): "))
+
+                            if choice.lower() == 'y':
+                                start_game()
+
+                            else:
+                                print("\nBye! Thanks for playing!\n")
+                                exit()
+
 
                     input(yellow("\nPress 'ENTER' to continue: "))
                     return current_attack_board
@@ -138,7 +160,7 @@ def place_phase(player, current_board):
         # Reset ship placements
         if code.lower() == 'x':
             ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
-            current_board = [['-' for i in range(10)] for j in range(10)]
+            current_board = make_board()
             print(yellow("\nAll ships removed!"))
             input(yellow("\nPress 'ENTER' to continue: "))
             continue
@@ -305,24 +327,6 @@ def start_game():
     while True:
         player_1_attack_board = battle_phase(1, player_1_attack_board, player_2_board)
         player_2_attack_board = battle_phase(2, player_2_attack_board, player_1_board)
-
-        player_1_status, player_2_status = check_win(player_1_attack_board), check_win(player_2_attack_board)
-
-        if player_1_status or player_2_status:
-            winner = 1 if player_1_status else 2
-            winning_board = player_1_attack_board if player_1_status else player_2_attack_board
-
-            print_board(winner, winning_board, 'Winning ')
-
-            print(f"Player '{winner}' has won! Congrats!")
-            choice = input(yellow("Would you like to play again? (y/n): "))
-
-            if choice.lower() == 'y':
-                start_game()
-
-            else:
-                print("\nBye! Thanks for playing!\n")
-                exit()
 
 
 start_game()
