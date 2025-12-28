@@ -3,24 +3,16 @@ from simple_colors import *
 
 tile_colours = {'-': blue, '■': green, 'X': red}
 
+
 # Colours the board tiles depending on the item
 def colour_tile(tile):
     return tile_colours.get(tile, lambda x: x)(tile)
 
+
 # Makes a 10 by 10 board
 def make_board():
-    return [['-' for i in range(10)] for j in range(10)]
+    return [['-' for _ in range(10)] for _ in range(10)]
 
-#
-def make_ships():
-    ships = {
-        5: ['Carrier'],
-        4: ['Battleship'],
-        3: ['Cruiser', 'Submarine'],
-        2: ['Destroyer']
-    }
-
-    return ships
 
 # Takes in errors list and prints them
 def print_errors(errors):
@@ -28,6 +20,7 @@ def print_errors(errors):
         print(red(f"\n{i}"))
 
     input(yellow("\nPress 'ENTER' to continue: "))
+
 
 # Prints out the player's board
 def print_board(player, current_board, board_type):
@@ -38,11 +31,11 @@ def print_board(player, current_board, board_type):
     # Print letters on left of board and numbers at the bottom
     for i, row in enumerate(current_board):
         print(magenta(chr(i + 65)), ' '.join(colour_tile(tile) for tile in row))
-    print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)) + '\n')
+    print('  ' + ' '.join(str(magenta(i + 1)) for i in range(10)))
 
 
-
-def battle_phase(player, current_attack_board, current_defend_board):
+# Allows users to target other player's ship
+def battle_phase(player, current_attack_board, current_defend_board, hits):
     while True:
         print_board(player, current_attack_board, 'Attack ')
 
@@ -58,6 +51,7 @@ def battle_phase(player, current_attack_board, current_defend_board):
             exit()
 
 
+        # Check if code is valid length
         if len(coord) in range(2, 4):
             try:
                 letter = coord[0].upper()
@@ -85,7 +79,7 @@ def battle_phase(player, current_attack_board, current_defend_board):
             if errors:
                 print_errors(errors)
 
-            # 
+            # If valid
             else:
                 row = ord(letter) - 65
                 col = number - 1
@@ -100,24 +94,17 @@ def battle_phase(player, current_attack_board, current_defend_board):
                     if current_defend_board[row][col] == '-':
                         current_attack_board[row][col] = '●'
                         print_board(player, current_attack_board, 'Attack ')
-                        print(red("Miss!"))
+                        print(red("\nMiss!"))
 
                     # If tile is a ship, hit
                     else:
                         current_attack_board[row][col] = 'X'
+                        hits += 1
                         print_board(player, current_attack_board, 'Attack ')
-                        print(green("Hit!"))
+                        print(green("\nHit!"))          
 
-                        # Check how many ship tiles they have hit
-                        count = 0
-
-                        for i in current_attack_board:
-                            for j in i:
-                                if j == 'X':
-                                    count += 1
-
-                        # If player has won   
-                        if count == 17:
+                        # Check igf player has won   
+                        if hits == 21:
                             print(green(f"\nPlayer '{player}' has won! Congrats!"))
                             choice = input(yellow("\nWould you like to play again? (y/n): "))
 
@@ -130,7 +117,7 @@ def battle_phase(player, current_attack_board, current_defend_board):
 
 
                     input(yellow("\nPress 'ENTER' to continue: "))
-                    return current_attack_board
+                    return current_attack_board, hits
 
 
         # If coord length isn't valid
@@ -139,14 +126,14 @@ def battle_phase(player, current_attack_board, current_defend_board):
             
 
 
-
+# ALlows users to place ships on their boards
 def place_phase(player, current_board):
-    ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+    ships = {'Carrier': 6, 'Battleship': 5, 'Cruiser': 4, 'Submarine': 3, 'Destroyer': 2}
 
     while ships:
         print_board(player, current_board, '')
         
-        print(green("Available ships:"))
+        print(green("\nAvailable ships:"))
         for name, size in ships.items():
             print(f"{name}: {size}")
         
@@ -159,7 +146,7 @@ def place_phase(player, current_board):
     
         # Reset ship placements
         if code.lower() == 'x':
-            ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+            ships = {'Carrier': 6, 'Battleship': 5, 'Cruiser': 4, 'Submarine': 3, 'Destroyer': 2}
             current_board = make_board()
             print(yellow("\nAll ships removed!"))
             input(yellow("\nPress 'ENTER' to continue: "))
@@ -177,11 +164,11 @@ def place_phase(player, current_board):
                 length = int(code[0])
                 letter = code[1].upper()
         
-                # Handle both single and double digit columns 
+                # Handle both single and double digit numbers 
                 if len(code) == 4:
                     number = int(code[2])
                     direction = code[3].upper()
-                else:  # len(code) == 5
+                else:
                     number = int(code[2:4])
                     direction = code[4].upper()
             
@@ -249,7 +236,7 @@ def place_phase(player, current_board):
                     if found_adjacent_ship:
                         break
 
-                    # Check all 8 surrounding tiles using dr and dc
+                    # Check all 8 surrounding tiles using delta row and col
                     for delta_row in [-1, 0, 1]:
                         # Break if adjacent ships were found
                         if found_adjacent_ship:
@@ -268,12 +255,9 @@ def place_phase(player, current_board):
                                 if current_board[check_row][check_col] == '■' and (check_row, check_col) not in coords:
                                     # Raise flag error
                                     found_adjacent_ship = True
+                                    errors.append("Ship must be at least one tile away from other ships")
                                     break
                 
-                # Append error if detected
-                if found_adjacent_ship:
-                    errors.append("Ship must be at least one tile away from other ships")
-
 
                 # Print errors if any
                 if errors:
@@ -292,9 +276,9 @@ def place_phase(player, current_board):
                             break
 
                     # Check if it was the last ship
-                    if not len(ships):
+                    if not ships:
                         print_board(player, current_board, '')
-                        print("All ships placed!")
+                        print("\nAll ships placed!")
                         confirm = input(yellow("\nAre you satisfied with your ship placement? (y/n): "))
                             
                         if confirm.lower() == 'y':
@@ -304,16 +288,14 @@ def place_phase(player, current_board):
 
                         else:
                             # Reset ships and board for the player
-                            ships = {'Carrier': 5, 'Battleship': 4, 'Cruiser': 3, 'Submarine': 3, 'Destroyer': 2}
+                            ships = {'Carrier': 6, 'Battleship': 5, 'Cruiser': 4, 'Submarine': 3, 'Destroyer': 2}
                             current_board = make_board()
                             print("\nResetting your board, place your ships again!")
                             input(yellow("\nPress 'ENTER' to continue: "))
 
-
         # If code isn't correct length
         else:
             print(red("\nInvalid format. Code must be 4-5 characters long (ex. 5A1D or 4B10D)"))
-
 
 
 # Main function that starts the game
@@ -324,9 +306,11 @@ def start_game():
     player_1_attack_board = make_board()
     player_2_attack_board = make_board()
 
+    player_1_hits = player_2_hits = 0
+
     while True:
-        player_1_attack_board = battle_phase(1, player_1_attack_board, player_2_board)
-        player_2_attack_board = battle_phase(2, player_2_attack_board, player_1_board)
+        player_1_attack_board, player_1_hits = battle_phase(1, player_1_attack_board, player_2_board, player_1_hits)
+        player_2_attack_board, player_2_hits = battle_phase(2, player_2_attack_board, player_1_board, player_2_hits)
 
 
 start_game()
